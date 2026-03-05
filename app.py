@@ -1316,14 +1316,15 @@ def start_scheduler():
 
 
 # ================================================================
-# BAŞLAT
+# BAŞLAT — Gunicorn ve python app.py her ikisi için çalışır
 # ================================================================
+init_firebase_admin()
+start_scheduler()
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Unified Sunucu Başlatıldı: http://0.0.0.0:{port}")
     print(f"   🌐 Web Sitesi : http://0.0.0.0:{port}/")
     print(f"   📊 CRM Paneli : http://0.0.0.0:{port}/crm")
     print(f"   🔧 Admin Panel: http://0.0.0.0:{port}/admin")
-    init_firebase_admin()
-    start_scheduler()
     app.run(host="0.0.0.0", port=port, debug=False)
