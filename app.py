@@ -572,10 +572,24 @@ def delete_blog_post(post_id):
 # API — İLAN SCRAPER
 # ================================================================
 
+_listings_cache = {"data": [], "ts": 0}
+_listings_lock = threading.Lock()
+
+def _refresh_listings_bg():
+    def _run():
+        data = fetch_real_estate_data()
+        with _listings_lock:
+            _listings_cache["data"] = data
+            _listings_cache["ts"]   = time.time()
+    threading.Thread(target=_run, daemon=True).start()
+
 @app.route("/api/listings", methods=["GET"])
 def get_listings():
-    data = fetch_real_estate_data()
-    return jsonify({"success": True, "data": data})
+    now = time.time()
+    if now - _listings_cache["ts"] < 300 and _listings_cache["data"]:
+        return jsonify({"success": True, "data": _listings_cache["data"]})
+    _refresh_listings_bg()
+    return jsonify({"success": True, "data": _listings_cache["data"]})
 
 
 # ── CB İlan Detay Önizleme ────────────────────────────────────────────────────
@@ -1316,15 +1330,14 @@ def start_scheduler():
 
 
 # ================================================================
-# BAŞLAT — Gunicorn ve python app.py her ikisi için çalışır
+# BAŞLAT
 # ================================================================
-init_firebase_admin()
-start_scheduler()
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Unified Sunucu Başlatıldı: http://0.0.0.0:{port}")
     print(f"   🌐 Web Sitesi : http://0.0.0.0:{port}/")
     print(f"   📊 CRM Paneli : http://0.0.0.0:{port}/crm")
     print(f"   🔧 Admin Panel: http://0.0.0.0:{port}/admin")
+    init_firebase_admin()
+    start_scheduler()
     app.run(host="0.0.0.0", port=port, debug=False)
